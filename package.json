@@ -1,0 +1,17 @@
+{
+  "name": "spotify-metadata-scraper",
+  "private": true,
+  "scripts": {
+    "scrape": "bun run src/cli.ts",
+    "test": "bun test",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "type": "module",
+  "version": "0.1.0",
+  "devDependencies": {
+    "bun-types": "^1.4.3",
+    "typescript": "^7.0.2",
+    "wrangler": "4.151.0"
+  }
+}
