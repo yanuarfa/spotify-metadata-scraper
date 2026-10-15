@@ -1,5 +1,6 @@
 import { enrichTrackWithItunes, scrapeSpotify } from "./scraper.ts";
 import { searchDiscovery } from "./search.ts";
+import { resolveIsrc } from "./resolve.ts";
 
 const args = process.argv.slice(2);
 const enrich = args.includes("--enrich");
@@ -10,6 +11,7 @@ const inputs = args.filter((a, i) => !a.startsWith("--") && (outIdx < 0 || i !==
 if (!inputs.length) {
   console.error("Usage: bun run src/cli.ts <spotify url|uri> [more...] [--enrich] [--out file.json]");
   console.error("   or: bun run src/cli.ts search <query...>");
+  console.error("   or: bun run src/cli.ts resolve <isrc>");
   process.exit(2);
 }
 
@@ -20,6 +22,24 @@ if (inputs[0] === "search") {
     process.exit(2);
   }
   console.log(JSON.stringify(await searchDiscovery(q, 10), null, 2));
+  process.exit(0);
+}
+
+if (inputs[0] === "resolve") {
+  const isrc = inputs[1];
+  if (!isrc) {
+    console.error("Usage: bun run src/cli.ts resolve <isrc>");
+    process.exit(2);
+  }
+  const found = await resolveIsrc(isrc).catch((e) => {
+    console.error(e instanceof Error ? e.message : String(e));
+    process.exit(1);
+  });
+  if (!found) {
+    console.error(`No Spotify track linked to ISRC ${isrc} in MusicBrainz`);
+    process.exit(1);
+  }
+  console.log(JSON.stringify(found, null, 2));
   process.exit(0);
 }
 

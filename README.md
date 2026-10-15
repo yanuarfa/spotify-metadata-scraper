@@ -13,6 +13,7 @@ bun run src/cli.ts <url-playlist> <url-artist>
 bun run src/cli.ts <url-track> --enrich
 bun run src/cli.ts <url> --out hasil.json
 bun run src/cli.ts search ariana grande into you
+bun run src/cli.ts resolve USUM71601827
 bun test
 ```
 
@@ -37,4 +38,5 @@ GET  /api/track/<id>     /api/album/<id>     /api/playlist/<id>
 GET  /api/artist/<id>    /api/episode/<id>   /api/show/<id>     [&enrich=1]
 POST /api/scrape         { "url": "..." }  atau  { "urls": ["...", "..."] }  (maks 10)
 GET  /api/search?q=<query>[&limit=10]     discovery Deezer + iTunes (bukan ID Spotify)
+GET  /api/resolve?isrc=<isrc>            ISRC -> track Spotify (via MusicBrainz)
 ```

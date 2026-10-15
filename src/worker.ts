@@ -1,5 +1,6 @@
 import { enrichTrackWithItunes, scrapeSpotify, type SpotifyMeta } from "./scraper.ts";
 import { searchDiscovery } from "./search.ts";
+import { normalizeIsrc, resolveIsrc } from "./resolve.ts";
 
 const KINDS = ["track", "album", "playlist", "artist", "episode", "show"] as const;
 
@@ -47,6 +48,7 @@ export async function handleRequest(req: Request, fetchFn: typeof fetch = fetch)
         endpoints: [
           "GET /api/scrape?url=<spotify url|uri>[&enrich=1]",
           "GET /api/search?q=<query>[&limit=10] (discovery: deezer+itunes, not spotify ids)",
+          "GET /api/resolve?isrc=<isrc> (isrc to spotify track, via musicbrainz)",
           "GET /api/track/:id | /api/album/:id | /api/playlist/:id | /api/artist/:id [&enrich=1]",
           'POST /api/scrape { "url": "..." } | { "urls": ["...", "..."] }',
           "GET /health",
@@ -63,6 +65,15 @@ export async function handleRequest(req: Request, fetchFn: typeof fetch = fetch)
       const limit = Number.isFinite(raw) ? Math.min(25, Math.max(1, Math.trunc(raw))) : 10;
       const payload = await searchDiscovery(q, limit, fetchFn);
       return json(payload, 200, { "Cache-Control": "public, max-age=300" });
+    }
+
+    if (req.method === "GET" && path === "/api/resolve") {
+      const raw = url.searchParams.get("isrc");
+      if (!raw) return json({ error: "Missing query param: isrc" }, 400);
+      if (!normalizeIsrc(raw)) return json({ error: `Invalid ISRC: ${raw}` }, 400);
+      const found = await resolveIsrc(raw, fetchFn);
+      if (!found) return json({ error: `No Spotify track linked to ISRC ${raw.toUpperCase()} in MusicBrainz` }, 404);
+      return json(found, 200, { "Cache-Control": "public, max-age=86400" });
     }
 
     if (req.method === "GET" && path === "/api/scrape") {
