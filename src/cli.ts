@@ -1,4 +1,5 @@
 import { enrichTrackWithItunes, scrapeSpotify } from "./scraper.ts";
+import { searchDiscovery } from "./search.ts";
 
 const args = process.argv.slice(2);
 const enrich = args.includes("--enrich");
@@ -8,7 +9,18 @@ const inputs = args.filter((a, i) => !a.startsWith("--") && (outIdx < 0 || i !==
 
 if (!inputs.length) {
   console.error("Usage: bun run src/cli.ts <spotify url|uri> [more...] [--enrich] [--out file.json]");
+  console.error("   or: bun run src/cli.ts search <query...>");
   process.exit(2);
+}
+
+if (inputs[0] === "search") {
+  const q = inputs.slice(1).join(" ");
+  if (!q) {
+    console.error("Usage: bun run src/cli.ts search <query...>");
+    process.exit(2);
+  }
+  console.log(JSON.stringify(await searchDiscovery(q, 10), null, 2));
+  process.exit(0);
 }
 
 const results = [];

@@ -1,4 +1,5 @@
 import { enrichTrackWithItunes, scrapeSpotify, type SpotifyMeta } from "./scraper.ts";
+import { searchDiscovery } from "./search.ts";
 
 const KINDS = ["track", "album", "playlist", "artist", "episode", "show"] as const;
 
@@ -45,6 +46,7 @@ export async function handleRequest(req: Request, fetchFn: typeof fetch = fetch)
         source: "spotify-embed (no credentials)",
         endpoints: [
           "GET /api/scrape?url=<spotify url|uri>[&enrich=1]",
+          "GET /api/search?q=<query>[&limit=10] (discovery: deezer+itunes, not spotify ids)",
           "GET /api/track/:id | /api/album/:id | /api/playlist/:id | /api/artist/:id [&enrich=1]",
           'POST /api/scrape { "url": "..." } | { "urls": ["...", "..."] }',
           "GET /health",
@@ -53,6 +55,15 @@ export async function handleRequest(req: Request, fetchFn: typeof fetch = fetch)
     }
 
     if ((req.method === "GET" || req.method === "HEAD") && path === "/health") return json({ ok: true });
+
+    if (req.method === "GET" && path === "/api/search") {
+      const q = url.searchParams.get("q");
+      if (!q) return json({ error: "Missing query param: q" }, 400);
+      const raw = Number(url.searchParams.get("limit") ?? 10);
+      const limit = Number.isFinite(raw) ? Math.min(25, Math.max(1, Math.trunc(raw))) : 10;
+      const payload = await searchDiscovery(q, limit, fetchFn);
+      return json(payload, 200, { "Cache-Control": "public, max-age=300" });
+    }
 
     if (req.method === "GET" && path === "/api/scrape") {
       const input = url.searchParams.get("url") ?? url.searchParams.get("uri");
